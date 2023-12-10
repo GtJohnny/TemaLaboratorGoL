@@ -49,17 +49,17 @@ inc %ebx  #(n+2)*(1+x)+y+1
 mov $7, %eax
 and %ebx, %eax  //restul impartirii la 8
 movb %al,%cl
+
+#####verifica de aici in jos
+
 shr $3, %ebx
-add $v, %ebx
+add $v, %ebx #adresa pt byte-ul din vector
+
+mov $0x80, %edx
+shr %cl, %edx
+addb %dl,(%ebx)
+
 #shift cu CL apoi adaugare
-mov ()
-
-mov (%ebx),
-
-
-
-
-
 
 
 

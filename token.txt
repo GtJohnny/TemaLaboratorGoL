@@ -1,1 +1,4 @@
 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
+
+git remote set-url origin https://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@github.com/GtJohnny/TemaLaboratorGol
+
