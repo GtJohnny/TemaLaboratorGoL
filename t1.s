@@ -10,6 +10,7 @@ k:.space 1 ##[1,18]
 size:.space 1## [0,50]
 pfpar:.asciz "%d\n"
 pfmat:.asciz "%08b\n"
+pffinal: .asciz "%d "
 newl:.asciz "\n"            
 .text
 .global main
@@ -96,13 +97,15 @@ PA_end:
 
 
 
+
+
+
+
+
+
 add $12,%esp
 pop %ebp
 ret
-
-
-
-
 
 ####################
 Citire:
@@ -215,7 +218,6 @@ push %edx
 ret
 
 VerPozitie:
-verif2:
 push %ebp
 mov %esp,%ebp
 lea v,%esi
@@ -380,13 +382,11 @@ mov %ecx,-8(%ebp)
 mov %eax,-4(%ebp)
 
 
-verif:
 push $0 ##suma
 
 push $0 ##tip de rand 0-mijloc 1-sus/jos
 push %eax  ## indice pozitie
 call VerPozitie
-verif3:
 
 pop %eax
 pop %ecx
@@ -418,63 +418,42 @@ stop1:
 ###
 
 
-
-
-lea v,%esi
-mem:
-add $49,%esi
-mov -4(%ebp),%eax
-mov -4(%ebp),%ecx
+movl -4(%ebp),%eax
+movl %eax, %ecx
 shr $3,%eax
-sub %eax,%esi
 and $7,%ecx
-mov $0x80,%eax
-shr %cl,%al
-andb (%esi),%al
-mov %esi,%edi
-add $50,%edi
+lea v,%esi
+add $49,%esi
+sub %eax,%esi
+movl $0x80, %ebx
+shr %cl,%ebx
+mov %ebx, %edx
+andb (%esi),%bl # >0 Alive ==0 Dead
+popl %eax ##scoatem numarul de vecini
+cmp $0,%ebx
 
-cmp $0,%al
-pop %ebx
-mov %ebx,%edx
 je dead
-##here alive
-cmp $2,%ebx
-jne nor_alive
-cmp $3,%ebx
-jne nor_alive
-addb %al,(%edi)
+##alive  vv
+cmp $2,%eax
+jl remain_dead
+cmp $3,%eax
+jg remain_dead
+add %edx, 50(%esi)
 
+jmp remain_dead
 dead:
-cmp $3,%ebx
-jne nor_alive
-addb %al,(%edi)
+cmp $3,%eax
+jne remain_dead
+add %edx, 50(%esi)
 
-
-nor_alive:
-
-
-mov %edx,%eax
-
-
-####
-push %eax
-push $sf
-call printf
-push $0
-call fflush
-add $12, %esp
-
-
-
-
-
-
-
-
-
-
-
+remain_dead:
+#### tiparim cati vecini avem
+#ush %eax
+#push $sf
+#call printf
+#push $0
+#call fflush
+#add $12, %esp
 
 mov -4(%ebp),%eax
 inc %eax
@@ -484,11 +463,11 @@ jmp mapj_st
 mapj_end:
 
 
-push $newl
-call printf
-push $0
-call fflush
-add $8, %esp
+#push $newl
+#call printf
+#push $0
+#call fflush
+#add $8, %esp
 
 
 
@@ -501,15 +480,115 @@ add $3,%eax
 jmp mapi_st
 mapi_end:
 
+###########Generatia e gata, copiem tot din v1 in v
+
+xor %ecx,%ecx
+xor %eax,%eax
+movb size, %cl
+lea v1,%esi
+add $49,%esi
+lea v,%edi
+add $49,%edi
+cpy_st:
+push %ecx
+movb (%esi),%cl
+movb $0, (%esi)
+
+cmp $0,%cl
+je nullb
+inc %eax
+nullb:
+
+movb %cl, (%edi)
+dec %edi
+dec %esi
+popl %ecx
+loop cpy_st
+
+
+
+
+cmp $0,%eax
+jg not_nullmat
+movl $1, -16(%ebp) 
+not_nullmat: #########am ajuns la ultima matrice care e plina de 0
+
+
+
+
 mov -16(%ebp),%edx
 dec %edx
- 
 jmp gen_st
 gen_end:
+####acum printam ce mai e la final si gata
+
+mov -20(%ebp),%eax
+sub $8,%esp
+printfin_i_st:
+cmp -12(%ebp),%eax
+jge printfin_i_end
+mov %eax, -4(%ebp)
+
+xor %ecx,%ecx
+movb n,%cl
+sub $2,%cl
+
+printfin_j_st:
+cmp $0,%ecx
+je printfin_j_end
+mov %eax,-4(%ebp)
+mov %ecx,-8(%ebp)
+
+verif1:
+
+
+mov %eax,%ecx
+shr $3, %eax
+and $7, %ecx
+lea v, %esi
+add $49,%esi
+sub %eax,%esi
+mov $0x80,%eax
+shr %cl,%eax
+and (%esi),%eax
+not %ecx
+add $8,%ecx
+shr %cl,%eax
+###Print final si obligatoriu
+
+movl %eax,4(%esp)
+movl $pffinal,(%esp)
+call printf
+push $0
+call fflush
+pop %eax
+
+
+mov -4(%ebp),%eax
+inc %eax
+mov -8(%ebp),%ecx
+dec %ecx
+jmp printfin_j_st
+printfin_j_end:
+
+movl $newl,(%esp)
+call printf
+push $0
+call fflush
+pop %eax
 
 
 
-add $20,%esp
+mov -4(%ebp),%eax
+add $3,%eax
+jmp printfin_i_st
+printfin_i_end:
+
+
+
+
+
+add $28,%esp
 pop %ebp
 ret
 
@@ -519,10 +598,7 @@ ret
 main:
 
 call Citire
-call PrintAll
 call NextGen
-
-
 
 
 
@@ -530,3 +606,4 @@ exit:
 mov $1, %eax
 xor %ebx, %ebx
 int $0x80
+
