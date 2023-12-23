@@ -7,11 +7,18 @@ n:.space 1 ##[1,18]
 m:.space 1 ##[1,18]
 p:.space 2 ##[0,324]
 k:.space 1 ##[1,18]
+crypt:.space 1 ##{0,1}
 size:.space 1## [0,50]
+offset:.space 1 #[0,7]
 pfpar:.asciz "%d\n"
 pfmat:.asciz "%08b\n"
 pffinal: .asciz "%d "
-newl:.asciz "\n"            
+newl:.asciz "\n"     
+scanHex:.asciz "%6X%16llX"
+scanMesaj:.asciz "%s"
+mesHex:.space 16 
+mesNormal:.space 10
+
 .text
 .global main
 
@@ -70,7 +77,6 @@ popl %eax
 xor %ecx,%ecx
 movb size,%cl
 
-###################################################
 lea v,%esi
 add $49,%esi
 popl %eax
@@ -96,18 +102,11 @@ jmp PA
 PA_end:
 
 
-
-
-
-
-
-
-
 add $12,%esp
 pop %ebp
 ret
 
-####################
+##########################
 Citire:
 push %ebp
 mov %esp, %ebp
@@ -147,9 +146,9 @@ and $7,%ecx
 shr $3,%eax
 cmpb $0,%cl
 jz here
-inc %eax
+    inc %eax
 here:
-movb %al, size
+    movb %al, size
 
 
 call scanf  ##cin>>p (puncte vii)
@@ -188,15 +187,133 @@ movl -8(%ebp), %ecx
 dec %ecx
 jmp while_st
 while_end:
-
 call scanf
+
 movb -4(%ebp),%al
 movb %al,k
+
+
+
+call scanf
+xor %eax,%eax
+movb -4(%ebp),%al
+movb %al,crypt
 add $16,%esp
+
+cmp $1,%eax
+je cry1  ###decriptare
+    push $mesNormal
+    push $scanMesaj
+    call scanf
+    add $8,%esp
+    jmp cried
+cry1:      ###criptare
+    lea mesHex,%esi
+    push %esi
+    add $8,%esi
+    push %esi
+    push $scanHex
+    call scanf
+    add $12,%esp
+cried:
+
+
+
+
 pop %ebp
 ret
 
-#########
+###############
+
+Decriptare:
+####
+#  -4(%ebp)  -> edx counter marime matrice
+#  -8(%ebp)  -> ecx counter hexa
+#  -12(%ebp) -> offset
+#
+####
+    push %ebp ##counter
+    mov %esp,%ebp
+    verif:
+
+    xor %edx,%edx
+    movb size, %dl
+    push %edx   
+
+    lea mesHex,%edi
+    add $9,%edi
+    push $0
+
+    lea v, %esi
+    add $49,%esi
+
+    movb offset,%dl
+    push %edx
+
+    
+
+    mov $10,%ecx
+    dec_start:
+        cmp $0,%ecx
+        je dec_stop
+        mov %ecx, -8(%ebp)
+        xor %eax,%eax
+        movb (%edi),%al  
+        cmp $0,%eax
+        je skipped:
+            mov %edx,-4(%ebp)
+            cmp $1,%edx
+            jne appended
+                xor %eax,%eax
+                xor %ebx,%ebx
+                movb n,%al
+                movb m,%bl
+                mul %ebx
+                add -12(%ebp),%eax
+                and $7,%eax
+                add %eax,-12(%ebp)
+                movb size,%dl
+            appended:
+            xor %eax,%eax
+            movb (%esi),%al
+            mov -12(%ebp),%ecx
+             ########trebe calcul cum shiftez + capetele de concatenare
+
+
+
+            mov -4(%ebp),%edx
+            dec %edx
+        skipped: 
+        mov -8(%ebp), %ecx
+        dec %ecx
+        dec %edi
+        jmp dec_start
+    dec_stop:
+
+
+
+
+    add $12,%esp
+    pop %ebp
+    ret
+
+
+Criptare:
+    push %ebp
+    mov %esp,%ebp
+
+
+
+
+
+
+    pop %ebp
+    ret
+
+
+
+
+###############
 
 Numara:
 pop %edx
@@ -448,7 +565,7 @@ add %edx, 50(%esi)
 
 remain_dead:
 #### tiparim cati vecini avem
-#push %eax
+#ush %eax
 #push $sf
 #call printf
 #push $0
@@ -520,75 +637,27 @@ mov -16(%ebp),%edx
 dec %edx
 jmp gen_st
 gen_end:
-####acum printam ce mai e la final si gata
-
-mov -20(%ebp),%eax
-sub $8,%esp
-printfin_i_st:
-cmp -12(%ebp),%eax
-jge printfin_i_end
-mov %eax, -4(%ebp)
-
-xor %ecx,%ecx
-movb n,%cl
-sub $2,%cl
-
-printfin_j_st:
-cmp $0,%ecx
-je printfin_j_end
-mov %eax,-4(%ebp)
-mov %ecx,-8(%ebp)
-
-verif1:
+add $20,%esp
 
 
-mov %eax,%ecx
-shr $3, %eax
-and $7, %ecx
-lea v, %esi
-add $49,%esi
-sub %eax,%esi
-mov $0x80,%eax
-shr %cl,%eax
-and (%esi),%eax
-not %ecx
-add $8,%ecx
-shr %cl,%eax
-###Print final si obligatoriu
-
-movl %eax,4(%esp)
-movl $pffinal,(%esp)
-call printf
-push $0
-call fflush
-pop %eax
-
-
-mov -4(%ebp),%eax
-inc %eax
-mov -8(%ebp),%ecx
-dec %ecx
-jmp printfin_j_st
-printfin_j_end:
-
-movl $newl,(%esp)
-call printf
-push $0
-call fflush
-pop %eax
+#### hai cu criptarea
 
 
 
-mov -4(%ebp),%eax
-add $3,%eax
-jmp printfin_i_st
-printfin_i_end:
+xor %eax,%eax
+movb crypt,%al
+cmp $1,%eax
+
+je go_decrypt
+    call Criptare
+    jmp done
+go_decrypt:
+    call Decriptare
+done:
 
 
 
 
-
-add $28,%esp
 pop %ebp
 ret
 
@@ -599,8 +668,6 @@ main:
 
 call Citire
 call NextGen
-
-
 
 exit:
 mov $1, %eax

@@ -448,7 +448,7 @@ add %edx, 50(%esi)
 
 remain_dead:
 #### tiparim cati vecini avem
-#push %eax
+#ush %eax
 #push $sf
 #call printf
 #push $0
